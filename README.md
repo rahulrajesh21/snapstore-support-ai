@@ -1,21 +1,21 @@
-# 🛍️ SnapStore Customer Support AI (RAG Agent)
+# SnapStore Customer Support AI (RAG Agent)
 
 A production-ready Retrieval-Augmented Generation (RAG) Customer Support assistant for **SnapStore**. Built with **FastAPI**, **LangGraph**, **Pinecone Vector Database**, **Google Gemini**, and a responsive **Tailwind CSS** chat frontend.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-- **Document Grounded (RAG):** Retrieves accurate store policies, return windows, warranty clauses, and customer conditions directly from indexed PDF documentation.
+- **Document Grounded (RAG):** Retrieves store policies, return windows, warranty clauses, and customer conditions directly from indexed PDF documentation.
 - **Strict Guardrails & Refusal Rules:** Strictly ignores off-topic requests (coding, personal advice, general knowledge) and refuses prompt injection attempts.
 - **LangGraph Checkpointer State:** Maintains conversation context across turns using memory-checkpointed agent architecture.
 - **Vector Search with Pinecone:** Fast, serverless vector similarity search using Google Generative AI embeddings (1536 dimensions).
-- **Modern Chat Frontend:** Fully responsive chat UI with markdown rendering, suggested question pills, typing indicators, and one-click copy buttons.
+- **Responsive Chat Frontend:** Clean chat UI with markdown rendering, suggested question pills, typing indicators, and one-click copy buttons.
 - **Production REST API:** Clean FastAPI endpoints with CORS middleware, health checks, and automatic OpenAPI Swagger documentation.
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```mermaid
 flowchart LR
@@ -37,7 +37,7 @@ flowchart LR
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 ├── agent/
@@ -69,7 +69,7 @@ flowchart LR
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Prerequisites
 - **Python 3.10+** (Tested on Python 3.11)
@@ -107,7 +107,7 @@ INDEX_NAME=shop-support
 
 ---
 
-## 📥 Ingestion & Index Setup
+## Ingestion & Index Setup
 
 If your Pinecone index is not created yet, create it using:
 ```bash
@@ -122,7 +122,7 @@ python ingest.py
 
 ---
 
-## 🖥️ Running the Application
+## Running the Application
 
 ### 1. Start the FastAPI Backend
 ```bash
@@ -145,7 +145,7 @@ You can run the frontend in any of the following ways:
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### Health Check
 `GET /`
@@ -177,5 +177,5 @@ You can run the frontend in any of the following ways:
 
 ---
 
-## 🛡️ License
+## License
 This project is open-source and available under the [MIT License](LICENSE).
