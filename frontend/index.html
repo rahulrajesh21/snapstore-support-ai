@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SnapStore Support | AI Customer Assistant</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <!-- DOMPurify for sanitizing markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              950: '#1e1b4b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Main Container -->
+  <div class="flex-1 flex flex-col max-w-4xl w-full mx-auto bg-white sm:my-3 sm:rounded-2xl sm:shadow-2xl sm:border sm:border-slate-200 overflow-hidden">
+    
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-indigo-900 text-white px-5 py-4 flex items-center justify-between shadow-md z-10">
+      <div class="flex items-center space-x-3.5">
+        <!-- Logo / Avatar -->
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-400 flex items-center justify-center shadow-inner text-white font-bold text-lg">
+          <i class="fa-solid fa-bag-shopping"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-bold text-lg tracking-tight">SnapStore Support</h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              AI Active
+            </span>
+          </div>
+          <p class="text-xs text-brand-200">SnapStore Official Policy & Inquiries Assistant</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-2">
+        <button id="clearBtn" title="Clear Conversation" class="text-brand-200 hover:text-white hover:bg-white/10 p-2 rounded-lg text-sm transition-colors duration-150 flex items-center space-x-1.5">
+          <i class="fa-regular fa-trash-can"></i>
+          <span class="hidden sm:inline text-xs font-medium">Clear Chat</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Chat Messages Window -->
+    <main id="chatWindow" class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5 bg-gradient-to-b from-slate-50 to-white">
+      
+      <!-- Welcome Card -->
+      <div id="welcomeCard" class="max-w-xl mx-auto text-center py-6 px-4">
+        <div class="w-16 h-16 mx-auto mb-4 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-100">
+          <i class="fa-solid fa-robot text-2xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800 mb-2">Welcome to SnapStore Support</h2>
+        <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+          I'm your AI customer support assistant. I can answer questions regarding returns, warranties, shipping, product categories, and support escalation for SnapStore.
+        </p>
+
+        <!-- Suggested Prompt Chips -->
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Suggested Inquiries</div>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
+            <span>📦</span>
+            <span>What is the baseline return policy?</span>
+          </button>
+          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
+            <span>⚡</span>
+            <span>What are the rules for returning Electronics?</span>
+          </button>
+          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
+            <span>🚫</span>
+            <span>Which items cannot be returned?</span>
+          </button>
+          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
+            <span>📞</span>
+            <span>How do I contact customer support?</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages container dynamically populated by JS -->
+      <div id="messagesList" class="space-y-4"></div>
+
+      <!-- Typing Indicator (Hidden by default) -->
+      <div id="typingIndicator" class="hidden flex items-start space-x-3 message-anim">
+        <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs shadow-sm flex-shrink-0">
+          <i class="fa-solid fa-headset"></i>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm inline-flex items-center space-x-1.5">
+          <div class="w-2 h-2 rounded-full bg-brand-400 animate-bounce" style="animation-delay: 0ms"></div>
+          <div class="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style="animation-delay: 150ms"></div>
+          <div class="w-2 h-2 rounded-full bg-brand-600 animate-bounce" style="animation-delay: 300ms"></div>
+          <span class="text-xs text-slate-400 font-medium ml-2">Searching policies...</span>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Error Banner (Hidden by default) -->
+    <div id="errorBanner" class="hidden bg-rose-50 border-t border-rose-200 px-4 py-2.5 text-xs text-rose-700 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
+        <span id="errorMessage">Unable to connect to backend at http://127.0.0.1:8000</span>
+      </div>
+      <button id="dismissError" class="text-rose-500 hover:text-rose-800 font-semibold px-2">Dismiss</button>
+    </div>
+
+    <!-- Input Footer -->
+    <footer class="bg-white border-t border-slate-200 px-4 sm:px-6 py-3.5">
+      <form id="chatForm" class="flex items-end space-x-2.5">
+        <div class="flex-1 relative bg-slate-50 border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 rounded-2xl transition">
+          <textarea
+            id="chatInput"
+            rows="1"
+            placeholder="Ask about SnapStore policies, orders, or returns..."
+            class="w-full px-4 py-3 bg-transparent text-slate-800 placeholder-slate-400 text-sm focus:outline-none resize-none max-h-36 overflow-y-auto"
+          ></textarea>
+        </div>
+
+        <!-- Send Button -->
+        <button
+          type="submit"
+          id="sendBtn"
+          disabled
+          class="h-11 w-11 flex-shrink-0 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl flex items-center justify-center transition shadow-sm hover:shadow disabled:cursor-not-allowed group"
+          title="Send message"
+        >
+          <i class="fa-solid fa-paper-plane text-sm group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-150"></i>
+        </button>
+      </form>
+
+      <div class="flex justify-between items-center text-[11px] text-slate-400 mt-2 px-1">
+        <span>Press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px]">Enter</kbd> to send, <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px]">Shift + Enter</kbd> for new line</span>
+        <span class="flex items-center space-x-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>FastAPI: <code class="font-mono text-[10px] text-slate-500">/api/v1/chat</code></span>
+        </span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
