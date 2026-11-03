@@ -11,8 +11,8 @@ vector_store = PineconeVectorStore(
 )
 
 
-def load_embedding():
-    chunks = processor()
+def load_embedding(file_path: str = 'knowledge/Policy.pdf'):
+    chunks = processor(file_path)
     vector_store.add_documents(chunks)
     print(f"Successfully stored {len(chunks)} chunks in Pinecone.")
 

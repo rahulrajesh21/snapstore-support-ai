@@ -52,7 +52,7 @@ flowchart LR
 │   ├── app.js                 # Frontend API client and state management
 │   └── README.md              # Frontend specific documentation
 ├── knowledge/
-│   └── Policy.pdf             # Raw store policy document for ingestion
+│   └── Policy.pdf             # Example store policy document for demonstration
 ├── model/
 │   └── query_chat.py          # Pydantic schemas for request/response validation
 ├── services/
@@ -61,7 +61,7 @@ flowchart LR
 │   └── retrieval_service.py   # Pinecone vector store client and search
 ├── .env.example               # Template for environment variables
 ├── .gitignore                 # Preconfigured git ignore rules
-├── ingest.py                  # Script to process and index Policy.pdf into Pinecone
+├── ingest.py                  # CLI script to chunk and index PDFs into Pinecone
 ├── pine.py                    # Helper script to initialize Pinecone index
 ├── main.py                    # FastAPI application entry point and CORS setup
 └── requirements.txt           # Python dependencies
@@ -109,16 +109,55 @@ INDEX_NAME=shop-support
 
 ## Ingestion & Index Setup
 
-If your Pinecone index is not created yet, create it using:
+If your Pinecone index is not created yet, initialize it using:
 ```bash
 python pine.py
 ```
 
-Then, chunk and upload your policy document (`knowledge/Policy.pdf`) into Pinecone:
+Then, chunk and upload the example policy document (`knowledge/Policy.pdf`) into Pinecone:
 ```bash
 python ingest.py
 ```
 *Expected output: `Successfully stored 14 chunks in Pinecone.`*
+
+---
+
+## Loading Your Own Knowledge Base (Custom PDFs)
+
+The included `knowledge/Policy.pdf` file is a **sample demonstration document** illustrating an e-commerce policy. You can replace it with your own company handbook, return policies, FAQs, or technical documentation.
+
+### Method 1: Direct File Replacement (Simplest)
+1. Delete or replace `knowledge/Policy.pdf` with your own PDF document, keeping the filename as `knowledge/Policy.pdf`.
+2. Run the ingestion command:
+   ```bash
+   python ingest.py
+   ```
+
+### Method 2: Specify a Custom File Path
+You can pass any custom PDF path directly as an argument to `ingest.py`:
+```bash
+python ingest.py path/to/your_custom_document.pdf
+```
+Examples:
+```bash
+python ingest.py knowledge/company_faq.pdf
+python ingest.py knowledge/warranty_terms_2026.pdf
+```
+
+### Method 3: Adjust Chunking Parameters
+If your documents contain dense technical tables or long legal clauses, you can fine-tune chunking in `services/document_processor.py`:
+```python
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,      # Maximum characters per chunk
+    chunk_overlap=200     # Overlap between consecutive chunks
+)
+```
+
+### Method 4: Update System Prompt for Your Brand
+When deploying with your own documents, update `agent/prompt.py` to match your organization:
+- Replace `SnapStore` with your company name.
+- Replace `example@example.com` with your customer service email.
+- Adjust tone, strictness, and escalation criteria as needed.
 
 ---
 
