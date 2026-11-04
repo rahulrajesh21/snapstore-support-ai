@@ -18,9 +18,44 @@ const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
-const suggestBtns = document.querySelectorAll(".suggest-btn");
+const sessionBadge = document.getElementById("sessionBadge");
 
 let isWaitingForResponse = false;
+
+// Session Management (LangGraph thread_id support)
+function generateSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "session-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
+}
+
+function getSessionId() {
+  let sid = sessionStorage.getItem("snapstore_session_id");
+  if (!sid) {
+    sid = generateSessionId();
+    sessionStorage.setItem("snapstore_session_id", sid);
+  }
+  return sid;
+}
+
+function resetSessionId() {
+  const newSid = generateSessionId();
+  sessionStorage.setItem("snapstore_session_id", newSid);
+  updateSessionDisplay(newSid);
+  return newSid;
+}
+
+function updateSessionDisplay(sid) {
+  if (sessionBadge) {
+    const currentId = sid || getSessionId();
+    sessionBadge.textContent = currentId.slice(0, 8);
+    sessionBadge.parentElement.setAttribute("title", `Session ID: ${currentId}`);
+  }
+}
+
+// Initialize session badge on load
+updateSessionDisplay();
 
 // Configure Marked.js options
 if (window.marked) {
@@ -35,7 +70,6 @@ function autoResizeInput() {
   chatInput.style.height = "auto";
   chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + "px";
   
-  // Enable / disable send button
   const hasText = chatInput.value.trim().length > 0;
   sendBtn.disabled = !hasText || isWaitingForResponse;
 }
@@ -84,7 +118,9 @@ function getCurrentTime() {
 
 // Append User Message to UI
 function appendUserMessage(text) {
-  welcomeCard.classList.add("hidden");
+  if (welcomeCard) {
+    welcomeCard.classList.add("hidden");
+  }
 
   const messageWrapper = document.createElement("div");
   messageWrapper.className = "flex justify-end items-end space-x-2.5 message-anim";
@@ -184,13 +220,18 @@ async function handleSendMessage(query) {
   typingIndicator.classList.remove("hidden");
   scrollToBottom();
 
+  const currentSessionId = getSessionId();
+
   try {
     const response = await fetch(API_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ query: query })
+      body: JSON.stringify({
+        query: query,
+        session_id: currentSessionId
+      })
     });
 
     if (!response.ok) {
@@ -215,10 +256,10 @@ async function handleSendMessage(query) {
     typingIndicator.classList.add("hidden");
     console.error("Chat API Error:", err);
 
-    showError(`Error connecting to backend (${API_ENDPOINT}). Ensure FastAPI is running with: uvicorn main:app --reload`);
+    showError(`Error connecting to backend (${API_ENDPOINT}). Ensure FastAPI is running on port 8000.`);
 
     appendAssistantMessage(
-      `⚠️ **Connection Error:** I was unable to reach the SnapStore Support API. \n\nPlease verify that your FastAPI backend is running on \`http://127.0.0.1:8000\`:\n\`\`\`bash\nuvicorn main:app --reload\n\`\`\``
+      `⚠️ **Connection Error:** I was unable to reach the SnapStore Support API. \n\nPlease verify that your FastAPI backend is running on \`http://127.0.0.1:8000\`:\n\`\`\`bash\nsource .venv/bin/activate\nuvicorn main:app --reload\n\`\`\``
     );
   } finally {
     isWaitingForResponse = false;
@@ -236,20 +277,26 @@ chatForm.addEventListener("submit", (e) => {
   }
 });
 
-// Suggested Prompt Chips
-suggestBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const promptText = btn.querySelector("span:last-child").textContent;
-    handleSendMessage(promptText);
-  });
+// Event delegation for Suggested Inquiries Chips
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".suggest-btn");
+  if (btn) {
+    const promptText = btn.querySelector("span:last-child")?.textContent?.trim() || btn.textContent.trim();
+    if (promptText) {
+      handleSendMessage(promptText);
+    }
+  }
 });
 
-// Clear Chat Event
+// Clear Chat / Reset Session Event
 clearBtn.addEventListener("click", () => {
   messagesList.innerHTML = "";
-  welcomeCard.classList.remove("hidden");
+  if (welcomeCard) {
+    welcomeCard.classList.remove("hidden");
+  }
   hideError();
   chatInput.value = "";
+  resetSessionId();
   autoResizeInput();
   chatInput.focus();
 });

@@ -69,18 +69,22 @@
             <h1 class="font-bold text-lg tracking-tight">SnapStore Support</h1>
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
               <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              AI Active
+              Hybrid RAG Active
             </span>
           </div>
-          <p class="text-xs text-brand-200">SnapStore Official Policy & Inquiries Assistant</p>
+          <p class="text-xs text-brand-200">Official Multi-Domain Policy & Inquiries Assistant</p>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center space-x-2">
-        <button id="clearBtn" title="Clear Conversation" class="text-brand-200 hover:text-white hover:bg-white/10 p-2 rounded-lg text-sm transition-colors duration-150 flex items-center space-x-1.5">
+      <!-- Action Buttons & Session Info -->
+      <div class="flex items-center space-x-2.5">
+        <div class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-brand-200 text-xs font-mono" title="Active Thread Session ID">
+          <i class="fa-solid fa-hashtag text-[10px] opacity-70"></i>
+          <span id="sessionBadge">session</span>
+        </div>
+        <button id="clearBtn" title="Reset Session and Clear Chat" class="text-brand-200 hover:text-white hover:bg-white/10 px-2.5 py-1.5 rounded-lg text-xs transition-colors duration-150 flex items-center space-x-1.5">
           <i class="fa-regular fa-trash-can"></i>
-          <span class="hidden sm:inline text-xs font-medium">Clear Chat</span>
+          <span class="hidden sm:inline font-medium">New Chat</span>
         </button>
       </div>
     </header>
@@ -89,33 +93,65 @@
     <main id="chatWindow" class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5 bg-gradient-to-b from-slate-50 to-white">
       
       <!-- Welcome Card -->
-      <div id="welcomeCard" class="max-w-xl mx-auto text-center py-6 px-4">
-        <div class="w-16 h-16 mx-auto mb-4 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-100">
+      <div id="welcomeCard" class="max-w-2xl mx-auto text-center py-5 px-3">
+        <div class="w-14 h-14 mx-auto mb-3 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-100">
           <i class="fa-solid fa-robot text-2xl"></i>
         </div>
-        <h2 class="text-xl font-bold text-slate-800 mb-2">Welcome to SnapStore Support</h2>
-        <p class="text-sm text-slate-600 mb-6 leading-relaxed">
-          I'm your AI customer support assistant. I can answer questions regarding returns, warranties, shipping, product categories, and support escalation for SnapStore.
+        <h2 class="text-xl font-bold text-slate-800 mb-1.5">Welcome to SnapStore Support AI</h2>
+        <p class="text-xs sm:text-sm text-slate-600 mb-4 max-w-lg mx-auto leading-relaxed">
+          Ask any question across our verified customer documentation. Powered by structure-aware chunking and hybrid BM25 + Pinecone vector search.
         </p>
 
+        <!-- Domain Coverage Badges -->
+        <div class="flex flex-wrap justify-center gap-1.5 mb-6">
+          <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200/60">
+            <i class="fa-solid fa-box-open text-[10px]"></i>
+            <span>Returns & Refunds</span>
+          </span>
+          <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+            <i class="fa-solid fa-truck-fast text-[10px]"></i>
+            <span>Shipping & Delivery</span>
+          </span>
+          <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
+            <i class="fa-solid fa-shield-halved text-[10px]"></i>
+            <span>Warranty & Care+</span>
+          </span>
+          <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200/60">
+            <i class="fa-solid fa-credit-card text-[10px]"></i>
+            <span>Payments & Billing</span>
+          </span>
+          <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-300/60">
+            <i class="fa-solid fa-lock text-[10px]"></i>
+            <span>Account Security & 2FA</span>
+          </span>
+        </div>
+
         <!-- Suggested Prompt Chips -->
-        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Suggested Inquiries</div>
-        <div class="flex flex-wrap justify-center gap-2">
-          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
-            <span>📦</span>
-            <span>What is the baseline return policy?</span>
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5">Suggested Inquiries</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+          <button class="suggest-btn group bg-white hover:bg-brand-50/60 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 p-2.5 rounded-xl text-xs font-medium transition shadow-xs hover:shadow-sm flex items-start space-x-2.5">
+            <span class="text-base flex-shrink-0 mt-0.5">📦</span>
+            <span class="flex-1 leading-snug">What is the baseline return window for electronics?</span>
           </button>
-          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
-            <span>⚡</span>
-            <span>What are the rules for returning Electronics?</span>
+          <button class="suggest-btn group bg-white hover:bg-brand-50/60 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 p-2.5 rounded-xl text-xs font-medium transition shadow-xs hover:shadow-sm flex items-start space-x-2.5">
+            <span class="text-base flex-shrink-0 mt-0.5">🚚</span>
+            <span class="flex-1 leading-snug">What are the domestic shipping delivery options and fees?</span>
           </button>
-          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
-            <span>🚫</span>
-            <span>Which items cannot be returned?</span>
+          <button class="suggest-btn group bg-white hover:bg-brand-50/60 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 p-2.5 rounded-xl text-xs font-medium transition shadow-xs hover:shadow-sm flex items-start space-x-2.5">
+            <span class="text-base flex-shrink-0 mt-0.5">🛡️</span>
+            <span class="flex-1 leading-snug">What is the screen repair deductible under SnapStore Care+?</span>
           </button>
-          <button class="suggest-btn bg-white hover:bg-brand-50 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 px-3.5 py-2 rounded-xl text-xs font-medium transition shadow-sm hover:shadow text-left flex items-center space-x-2">
-            <span>📞</span>
-            <span>How do I contact customer support?</span>
+          <button class="suggest-btn group bg-white hover:bg-brand-50/60 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 p-2.5 rounded-xl text-xs font-medium transition shadow-xs hover:shadow-sm flex items-start space-x-2.5">
+            <span class="text-base flex-shrink-0 mt-0.5">💳</span>
+            <span class="flex-1 leading-snug">Do gift cards expire and can I request a price match?</span>
+          </button>
+          <button class="suggest-btn group bg-white hover:bg-brand-50/60 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 p-2.5 rounded-xl text-xs font-medium transition shadow-xs hover:shadow-sm flex items-start space-x-2.5">
+            <span class="text-base flex-shrink-0 mt-0.5">🔒</span>
+            <span class="flex-1 leading-snug">What are the password complexity and 2FA requirements?</span>
+          </button>
+          <button class="suggest-btn group bg-white hover:bg-brand-50/60 border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-700 p-2.5 rounded-xl text-xs font-medium transition shadow-xs hover:shadow-sm flex items-start space-x-2.5">
+            <span class="text-base flex-shrink-0 mt-0.5">📞</span>
+            <span class="flex-1 leading-snug">How do I escalate an unresolved issue to a live supervisor?</span>
           </button>
         </div>
       </div>
@@ -128,11 +164,11 @@
         <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs shadow-sm flex-shrink-0">
           <i class="fa-solid fa-headset"></i>
         </div>
-        <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm inline-flex items-center space-x-1.5">
+        <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm inline-flex items-center space-x-2">
           <div class="w-2 h-2 rounded-full bg-brand-400 animate-bounce" style="animation-delay: 0ms"></div>
           <div class="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style="animation-delay: 150ms"></div>
           <div class="w-2 h-2 rounded-full bg-brand-600 animate-bounce" style="animation-delay: 300ms"></div>
-          <span class="text-xs text-slate-400 font-medium ml-2">Searching policies...</span>
+          <span class="text-xs text-slate-500 font-medium ml-1">Searching policy documentation...</span>
         </div>
       </div>
 
@@ -154,7 +190,7 @@
           <textarea
             id="chatInput"
             rows="1"
-            placeholder="Ask about SnapStore policies, orders, or returns..."
+            placeholder="Ask about returns, shipping, warranty, billing, or security policies..."
             class="w-full px-4 py-3 bg-transparent text-slate-800 placeholder-slate-400 text-sm focus:outline-none resize-none max-h-36 overflow-y-auto"
           ></textarea>
         </div>
@@ -173,7 +209,7 @@
 
       <div class="flex justify-between items-center text-[11px] text-slate-400 mt-2 px-1">
         <span>Press <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px]">Enter</kbd> to send, <kbd class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded font-mono text-[10px]">Shift + Enter</kbd> for new line</span>
-        <span class="flex items-center space-x-1">
+        <span class="flex items-center space-x-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
           <span>FastAPI: <code class="font-mono text-[10px] text-slate-500">/api/v1/chat</code></span>
         </span>
