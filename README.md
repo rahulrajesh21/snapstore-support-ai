@@ -1,36 +1,41 @@
 # SnapStore Customer Support AI (RAG Agent)
 
-A production-ready Retrieval-Augmented Generation (RAG) Customer Support assistant for **SnapStore**. Built with **FastAPI**, **LangGraph**, **Pinecone Vector Database**, **Google Gemini**, and a responsive **Tailwind CSS** chat frontend.
+A production-ready Retrieval-Augmented Generation (RAG) Customer Support assistant for **SnapStore**. Built with **FastAPI**, **LangGraph**, **Pinecone Vector Database**, **Google Gemini**, **BM25 Hybrid Search**, and a responsive **Tailwind CSS** chat frontend.
 
 ---
 
 ## Key Features
 
-- **Document Grounded (RAG):** Retrieves store policies, return windows, warranty clauses, and customer conditions directly from indexed PDF documentation.
-- **Strict Guardrails & Refusal Rules:** Strictly ignores off-topic requests (coding, personal advice, general knowledge) and refuses prompt injection attempts.
-- **LangGraph Checkpointer State:** Maintains conversation context across turns using memory-checkpointed agent architecture.
-- **Vector Search with Pinecone:** Fast, serverless vector similarity search using Google Generative AI embeddings (1536 dimensions).
-- **Responsive Chat Frontend:** Clean chat UI with markdown rendering, suggested question pills, typing indicators, and one-click copy buttons.
-- **Production REST API:** Clean FastAPI endpoints with CORS middleware, health checks, and automatic OpenAPI Swagger documentation.
+- **Structure-Aware Chunking via Markdown:** Converts PDF documentation into structured Markdown via PyMuPDF4LLM and splits along semantic document headers (`#`, `##`, `###`) using `MarkdownHeaderTextSplitter`. Every chunk preserves its section hierarchy and breadcrumb metadata.
+- **Hybrid Search with Reciprocal Rank Fusion (RRF):** Fuses sparse lexical BM25 keyword matching with dense semantic Pinecone vector similarity search for optimal document retrieval.
+- **Document Grounded (RAG):** Retrieves store policies, return windows, warranty terms, shipping speeds, billing guidelines, and security requirements directly from 5 comprehensive store policy PDFs.
+- **Strict Guardrails & Refusal Rules:** Strictly ignores off-topic queries (coding, personal advice, general knowledge) and refuses prompt injection attempts.
+- **LangGraph Checkpointer State:** Maintains multi-turn conversation context across interactions using memory-checkpointed agent architecture.
+- **Responsive Chat Frontend:** Clean chat interface with live markdown rendering, suggested query pills, typing indicators, and one-click copy buttons.
+- **Production REST API:** Clean FastAPI endpoints with CORS middleware, lifespan index initialization, health checks, and interactive OpenAPI Swagger documentation.
 
 ---
 
 ## Architecture Overview
 
 ```mermaid
-flowchart LR
-    subgraph Ingestion ["1. Ingestion Pipeline"]
-        PDF["knowledge/Policy.pdf"] --> DP["Document Processor"]
-        DP --> Split["Recursive Text Splitter"]
-        Split --> Emb["Gemini Embeddings (1536)"]
-        Emb --> Pinecone["Pinecone Vector DB (shop-support)"]
+flowchart TD
+    subgraph Ingestion ["1. Structure-Aware Ingestion Pipeline"]
+        PDFs["knowledge/*.pdf (5 Policy PDFs)"] --> PyMu["Markdown Converter (pymupdf4llm)"]
+        PyMu --> MD["Structured Markdown (#, ##, ###)"]
+        MD --> Split["MarkdownHeaderTextSplitter"]
+        Split --> SubSplit["Recursive Sub-Splitter (chunk_size=1000)"]
+        SubSplit --> Meta["Breadcrumb & Section Metadata Enrichment"]
+        Meta --> Pinecone["Pinecone Vector DB (Dense 1536)"]
+        Meta --> BM25["In-Memory BM25 Index (Sparse Lexical)"]
     end
 
-    subgraph Runtime ["2. Runtime Query & RAG"]
-        User(["Customer / Frontend"]) <--> API["FastAPI (/api/v1/chat)"]
-        API <--> Service["RAG Service"]
-        Service --> Pinecone
-        Service --> Agent["LangGraph Agent + Memory"]
+    subgraph Runtime ["2. Hybrid RAG Query & Agent Execution"]
+        User(["Customer / Frontend UI"]) <--> API["FastAPI (/api/v1/chat)"]
+        API --> Hybrid["Hybrid Search (BM25 + Pinecone)"]
+        Hybrid --> RRF["Reciprocal Rank Fusion (RRF)"]
+        RRF --> Context["Breadcrumb-Enriched Policy Context"]
+        Context --> Agent["LangGraph Agent + Checkpointer"]
         Agent <--> Gemini["Google Gemini LLM"]
     end
 ```
@@ -44,6 +49,7 @@ flowchart LR
 │   ├── graph.py               # LLM, embeddings, checkpointer, and agent definition
 │   └── prompt.py              # System prompt, guardrails, and refusal rules
 ├── api/
+│   ├── dependencies.py        # FastAPI dependency injection for BM25 retriever
 │   └── v1/
 │       └── chat.py            # FastAPI chat router (POST /api/v1/chat)
 ├── frontend/
@@ -52,18 +58,24 @@ flowchart LR
 │   ├── app.js                 # Frontend API client and state management
 │   └── README.md              # Frontend specific documentation
 ├── knowledge/
-│   └── Policy.pdf             # Example store policy document for demonstration
+│   ├── Account_Security_and_Privacy_Policy.pdf   # 2FA, password, and privacy rules
+│   ├── Payment_and_Billing_Policy.pdf            # Invoicing, gift cards, price match
+│   ├── Policy.pdf                                # Master returns, refunds, exceptions
+│   ├── Shipping_and_Delivery_Policy.pdf          # Delivery tiers, carrier claims, customs
+│   └── Warranty_and_Repairs_Policy.pdf           # 1-year warranty, Care+ plans, RMA
 ├── model/
 │   └── query_chat.py          # Pydantic schemas for request/response validation
+├── scripts/
+│   └── build_knowledge_pdfs.py # PDF generation script for sample knowledge documents
 ├── services/
-│   ├── document_processor.py  # PDF loader and text splitter
-│   ├── rag_service.py         # RAG pipeline logic and message orchestration
-│   └── retrieval_service.py   # Pinecone vector store client and search
+│   ├── document_processor.py  # Structure-aware markdown extraction and chunker
+│   ├── rag_service.py         # Hybrid search RRF and agent message orchestration
+│   └── retrieval_service.py   # Pinecone vector store and BM25 index management
 ├── .env.example               # Template for environment variables
 ├── .gitignore                 # Preconfigured git ignore rules
 ├── ingest.py                  # CLI script to chunk and index PDFs into Pinecone
 ├── pine.py                    # Helper script to initialize Pinecone index
-├── main.py                    # FastAPI application entry point and CORS setup
+├── main.py                    # FastAPI application entry point, lifespan, and CORS
 └── requirements.txt           # Python dependencies
 ```
 
@@ -107,57 +119,60 @@ INDEX_NAME=shop-support
 
 ---
 
-## Ingestion & Index Setup
+## Ingestion & Vector Index Setup
 
+### 1. Initialize Pinecone Index
 If your Pinecone index is not created yet, initialize it using:
 ```bash
 python pine.py
 ```
 
-Then, chunk and upload the example policy document (`knowledge/Policy.pdf`) into Pinecone:
+### 2. Ingest Policy Documents
+Chunk and upload all PDFs in the `knowledge/` directory into Pinecone using structure-aware chunking:
 ```bash
 python ingest.py
 ```
-*Expected output: `Successfully stored 14 chunks in Pinecone.`*
+*Expected output: `Successfully stored 61 structure-aware chunks in Pinecone.`*
+
+You can also re-generate or modify the sample knowledge base PDFs at any time:
+```bash
+python scripts/build_knowledge_pdfs.py
+```
 
 ---
 
 ## Loading Your Own Knowledge Base (Custom PDFs)
 
-The included `knowledge/Policy.pdf` file is a **sample demonstration document** illustrating an e-commerce policy. You can replace it with your own company handbook, return policies, FAQs, or technical documentation.
+The `knowledge/` directory contains 5 comprehensive policy PDFs designed for an e-commerce platform. You can easily add your own company documents.
 
-### Method 1: Direct File Replacement (Simplest)
-1. Delete or replace `knowledge/Policy.pdf` with your own PDF document, keeping the filename as `knowledge/Policy.pdf`.
+### How Structure-Aware Chunking Works
+1. **Markdown Extraction:** `pymupdf4llm` scans your PDF and converts visual headings into standard Markdown (`# Title`, `## Section`, `### Subsection`).
+2. **Structural Boundaries:** `MarkdownHeaderTextSplitter` splits strictly along heading boundaries rather than slicing sentences arbitrarily.
+3. **Breadcrumb Metadata:** Every chunk is enriched with `Header 1`, `Header 2`, `Header 3`, `source`, `filename`, and a unified `section` path (e.g. `Shipping Policy > Domestic Shipping > Express Air`).
+4. **Adaptive Sub-Splitting:** Any section exceeding `chunk_size` is sub-split at sentence boundaries while preserving full header metadata.
+
+### Method 1: Add or Replace PDFs in `knowledge/`
+1. Place any new `.pdf` files directly inside the `knowledge/` folder.
 2. Run the ingestion command:
    ```bash
    python ingest.py
    ```
 
-### Method 2: Specify a Custom File Path
-You can pass any custom PDF path directly as an argument to `ingest.py`:
+### Method 2: Specify a Single PDF Path
+To index a single document without touching the rest:
 ```bash
-python ingest.py path/to/your_custom_document.pdf
-```
-Examples:
-```bash
-python ingest.py knowledge/company_faq.pdf
-python ingest.py knowledge/warranty_terms_2026.pdf
+python ingest.py path/to/your_document.pdf
 ```
 
 ### Method 3: Adjust Chunking Parameters
-If your documents contain dense technical tables or long legal clauses, you can fine-tune chunking in `services/document_processor.py`:
+Fine-tune chunk boundaries in `services/document_processor.py`:
 ```python
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,      # Maximum characters per chunk
-    chunk_overlap=200     # Overlap between consecutive chunks
+chunks = processor(
+    path="knowledge",
+    chunk_size=1000,      # Max characters per section chunk
+    chunk_overlap=150     # Overlap between consecutive sub-chunks
 )
 ```
-
-### Method 4: Update System Prompt for Your Brand
-When deploying with your own documents, update `agent/prompt.py` to match your organization:
-- Replace `SnapStore` with your company name.
-- Replace `example@example.com` with your customer service email.
-- Adjust tone, strictness, and escalation criteria as needed.
 
 ---
 
@@ -170,6 +185,8 @@ uvicorn main:app --reload --port 8000
 - API Base URL: `http://127.0.0.1:8000`
 - Interactive Swagger Docs: `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/`
+
+Upon startup, the server automatically builds the in-memory BM25 index over all documents in `knowledge/`.
 
 ### 2. Launch the Frontend
 You can run the frontend in any of the following ways:
@@ -203,14 +220,14 @@ You can run the frontend in any of the following ways:
 **Request Body:**
 ```json
 {
-  "query": "What is the return window for electronics?"
+  "query": "What is the screen repair deductible under SnapStore Care+?"
 }
 ```
 
 **Response:**
 ```json
 {
-  "response": "For Consumer Electronics & Gadgets (such as smartphones, laptops, smartwatches, cameras, and audio equipment), the return policy is as follows:\n\n* **Return Window:** 7 days from the delivery date.\n* **Condition Requirements:** Items must be in pristine, unactivated condition with manufacturer seals intact..."
+  "response": "The screen repair deductible is $29.00 USD for smartphones, tablets, and smartwatches under SnapStore Care+."
 }
 ```
 
