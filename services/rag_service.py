@@ -4,9 +4,11 @@ from services.retrieval_service import user_query
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.messages import SystemMessage, HumanMessage
 from agent.prompt import SYSTEM_PROMPT
+from langchain_core.documents import Document
+from services.reranker_service import rerank_document
 
 
-def reciprocal_rank_fusion(keyword_docs, dense_result, k=60, top_k=5):
+async def reciprocal_rank_fusion(query,keyword_docs, dense_result, k=60, top_k=5):
     """
     Combines sparse keyword results (BM25) and dense semantic results (Pinecone)
     using standard Reciprocal Rank Fusion (RRF).
@@ -34,14 +36,18 @@ def reciprocal_rank_fusion(keyword_docs, dense_result, k=60, top_k=5):
         reverse=True
     )
 
-    return [document_map[doc_id] for doc_id in ranked_doc_ids[:top_k]]
+    rrf_list = [document_map[doc_id] for doc_id in ranked_doc_ids]
+
+    # Send top candidates through the cross-encoder reranker
+    return await rerank_document(query=query, documents=rrf_list[:15], top_k=top_k)
 
 
 async def get_hybrid_search(query: QueryChat, bm25: BM25Retriever):
     """Executes parallel BM25 keyword search and dense vector search, then fuses ranks."""
     keyword_docs = await bm25.ainvoke(query.query)
     dense_docs = await user_query(query)
-    documents = reciprocal_rank_fusion(
+    documents = await reciprocal_rank_fusion(
+        query=query,
         keyword_docs=keyword_docs,
         dense_result=dense_docs,
         k=60,

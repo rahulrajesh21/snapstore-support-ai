@@ -28,5 +28,5 @@ def load_embedding(file_path: str = "knowledge"):
 
 async def user_query(query: QueryChat):
     """Performs dense vector similarity search in Pinecone."""
-    documents = await vector_store.asimilarity_search(query=query.query, k=5)
+    documents = await vector_store.asimilarity_search_with_relevance_scores(query=query.query, k=5,score_threshold=0.75)
     return documents

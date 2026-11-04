@@ -16,7 +16,6 @@ agent = create_agent(
     checkpointer=checkpoint
 )
 
-
 embedding_model = GoogleGenerativeAIEmbeddings(
     model='gemini-embedding-001',
     output_dimensionality=1536,
