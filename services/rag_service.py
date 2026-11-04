@@ -46,6 +46,10 @@ async def get_hybrid_search(query: QueryChat, bm25: BM25Retriever):
     """Executes parallel BM25 keyword search and dense vector search, then fuses ranks."""
     keyword_docs = await bm25.ainvoke(query.query)
     dense_docs = await user_query(query)
+
+    # Return empty list if both sparse and dense retrieval yielded no candidates
+    if not keyword_docs and not dense_docs:
+        return []
     documents = await reciprocal_rank_fusion(
         query=query,
         keyword_docs=keyword_docs,

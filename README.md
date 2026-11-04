@@ -7,7 +7,8 @@ A production-ready Retrieval-Augmented Generation (RAG) Customer Support assista
 ## Key Features
 
 - **Structure-Aware Chunking via Markdown:** Converts PDF documentation into structured Markdown via PyMuPDF4LLM and splits along semantic document headers (`#`, `##`, `###`) using `MarkdownHeaderTextSplitter`. Every chunk preserves its section hierarchy and breadcrumb metadata.
-- **Hybrid Search with Reciprocal Rank Fusion (RRF):** Fuses sparse lexical BM25 keyword matching with dense semantic Pinecone vector similarity search for optimal document retrieval.
+- **Two-Stage Hybrid Search & Re-ranking:** Fuses sparse lexical BM25 matching with dense semantic Pinecone vector similarity search via Reciprocal Rank Fusion (RRF), followed by deep cross-encoder re-ranking (BGE Reranker) for high precision retrieval.
+- **Lazy-Loaded Cross-Encoder:** Hardware-accelerated cross-encoder (Apple Silicon MPS / CUDA / CPU) initialized on demand without slowing down application startup.
 - **Document Grounded (RAG):** Retrieves store policies, return windows, warranty terms, shipping speeds, billing guidelines, and security requirements directly from 5 comprehensive store policy PDFs.
 - **Strict Guardrails & Refusal Rules:** Strictly ignores off-topic queries (coding, personal advice, general knowledge) and refuses prompt injection attempts.
 - **LangGraph Checkpointer State:** Maintains multi-turn conversation context across interactions using memory-checkpointed agent architecture.
@@ -34,7 +35,8 @@ flowchart TD
         User(["Customer / Frontend UI"]) <--> API["FastAPI (/api/v1/chat)"]
         API --> Hybrid["Hybrid Search (BM25 + Pinecone)"]
         Hybrid --> RRF["Reciprocal Rank Fusion (RRF)"]
-        RRF --> Context["Breadcrumb-Enriched Policy Context"]
+        RRF --> Rerank["Cross-Encoder Reranker (MPS / CPU)"]
+        Rerank --> Context["Breadcrumb-Enriched Policy Context"]
         Context --> Agent["LangGraph Agent + Checkpointer"]
         Agent <--> Gemini["Google Gemini LLM"]
     end
@@ -70,6 +72,7 @@ flowchart TD
 ├── services/
 │   ├── document_processor.py  # Structure-aware markdown extraction and chunker
 │   ├── rag_service.py         # Hybrid search RRF and agent message orchestration
+│   ├── reranker_service.py    # Cross-encoder model loading (MPS/CUDA/CPU) and scoring
 │   └── retrieval_service.py   # Pinecone vector store and BM25 index management
 ├── .env.example               # Template for environment variables
 ├── .gitignore                 # Preconfigured git ignore rules
